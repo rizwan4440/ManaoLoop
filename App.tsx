@@ -15,7 +15,6 @@ const getAudioDuration = (file: File): Promise<number> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      // Fix: Cast window to `any` to support `webkitAudioContext` for older browsers.
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContext.decodeAudioData(reader.result as ArrayBuffer, 
         (buffer) => {
@@ -104,8 +103,10 @@ const App: React.FC = () => {
       toast.success('Loop generated successfully!');
     } catch (error) {
       console.error(error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(`An error occurred: ${errorMessage}`);
+      toast.error(
+        "An error occurred during processing. This can happen with unsupported audio codecs or if the browser's security policy blocks the core library. Please try again or use a different file.",
+        { duration: 6000 }
+      );
     } finally {
       setIsProcessing(false);
     }
