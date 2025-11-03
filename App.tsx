@@ -11,7 +11,7 @@ import { ProcessResult } from './types';
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30 MB
 
-const getAudioDuration = (file: File): Promise<number> => {
+const getBlobDuration = (blob: Blob): Promise<number> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -28,7 +28,7 @@ const getAudioDuration = (file: File): Promise<number> => {
     reader.onerror = (error) => {
       reject(`File reading error: ${error}`);
     };
-    reader.readAsArrayBuffer(file);
+    reader.readAsArrayBuffer(blob);
   });
 };
 
@@ -82,12 +82,11 @@ const App: React.FC = () => {
         setProgress({ message, ratio: Math.round(ratio * 100) });
       };
       
-      onProgress('Analyzing audio...', 0);
-      const originalDuration = await getAudioDuration(file);
-      
-      const { data, duration } = await processAudio({ file, loopCount, onProgress, originalDuration });
+      const { data } = await processAudio({ file, loopCount, onProgress });
 
+      onProgress('Verifying output...', 100);
       const blob = new Blob([data.buffer], { type: 'audio/mp3' });
+      const duration = await getBlobDuration(blob);
       const url = URL.createObjectURL(blob);
       
       const originalName = file.name.substring(0, file.name.lastIndexOf('.'));
