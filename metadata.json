@@ -1,0 +1,5 @@
+{
+  "name": "ManaoLoop",
+  "description": "A free online audio loop maker that allows users to upload an audio file, choose the number of loops, and generate a seamlessly looped MP3 file directly in the browser using ffmpeg.wasm.",
+  "requestFramePermissions": []
+}
