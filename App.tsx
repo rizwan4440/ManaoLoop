@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { UploadCloud, FileAudio, Download, X, Music, Clock, HardDrive, Zap, Github, Heart } from 'lucide-react';
@@ -11,6 +10,29 @@ import { processAudio } from './services/ffmpegService';
 import { ProcessResult } from './types';
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30 MB
+
+const getAudioDuration = (file: File): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Fix: Cast window to `any` to support `webkitAudioContext` for older browsers.
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContext.decodeAudioData(reader.result as ArrayBuffer, 
+        (buffer) => {
+          resolve(buffer.duration);
+        },
+        (error) => {
+          reject(`Error decoding audio data: ${error.message}`);
+        }
+      );
+    };
+    reader.onerror = (error) => {
+      reject(`File reading error: ${error}`);
+    };
+    reader.readAsArrayBuffer(file);
+  });
+};
+
 
 const App: React.FC = () => {
   const [theme, toggleTheme] = useTheme();
@@ -61,7 +83,10 @@ const App: React.FC = () => {
         setProgress({ message, ratio: Math.round(ratio * 100) });
       };
       
-      const { data, duration } = await processAudio({ file, loopCount, onProgress });
+      onProgress('Analyzing audio...', 0);
+      const originalDuration = await getAudioDuration(file);
+      
+      const { data, duration } = await processAudio({ file, loopCount, onProgress, originalDuration });
 
       const blob = new Blob([data.buffer], { type: 'audio/mp3' });
       const url = URL.createObjectURL(blob);
@@ -79,7 +104,8 @@ const App: React.FC = () => {
       toast.success('Loop generated successfully!');
     } catch (error) {
       console.error(error);
-      toast.error('An error occurred during processing. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`An error occurred: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }
